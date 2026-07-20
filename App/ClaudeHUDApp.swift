@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     @Published var panelVisible = false
     @Published var hovering = false
     @Published var launchAtLogin = LoginItem.isEnabled
+    private var lastLoginToggle = Date.distantPast
 
     private var panel: FloatingPanel?
     private let store = MonitorStore()
@@ -78,7 +79,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
-        refreshLoginStatus()
+        // Don't clobber a just-made toggle: SMAppService.status lags for a
+        // moment after register/unregister and would report the old value,
+        // flipping the menu's checkmark back. Only sync external changes
+        // (e.g. toggled in System Settings) once that's settled.
+        if Date().timeIntervalSince(lastLoginToggle) > 5 {
+            refreshLoginStatus()
+        }
     }
 
     func togglePanel() {
@@ -131,11 +138,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     func setLaunchAtLogin(_ on: Bool) {
-        LoginItem.setEnabled(on)
-        // reflect the real registration status, not the requested one
-        launchAtLogin = LoginItem.isEnabled
+        lastLoginToggle = Date()
+        let ok = LoginItem.setEnabled(on)
+        // SMAppService.status lags right after the call, so reflect the
+        // action's outcome immediately rather than re-reading a stale status.
+        if ok { launchAtLogin = on }
         // if macOS parked the new item pending approval, take the user there
-        if on, LoginItem.status == .requiresApproval {
+        if on, ok, LoginItem.status == .requiresApproval {
             LoginItem.openSettings()
         }
     }
