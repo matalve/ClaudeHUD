@@ -1,0 +1,75 @@
+name: ClaudeHUD
+options:
+  bundleIdPrefix: se.matalve
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    # Ad-hoc signing so anyone can build and run locally without an Apple
+    # Developer account. Set your own DEVELOPMENT_TEAM if you want to
+    # distribute a signed/notarized build.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    CURRENT_PROJECT_VERSION: 3
+    MARKETING_VERSION: "0.3"
+    DEAD_CODE_STRIPPING: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+targets:
+  ClaudeHUD:
+    type: application
+    platform: macOS
+    sources:
+      - App
+      - Emitter/Shared.swift
+    dependencies:
+      - target: claudehud-emitter
+        embed: false
+        link: false
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: ClaudeHUD
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.utilities
+        LSUIElement: true
+    entitlements:
+      path: App/ClaudeHUD.entitlements
+      properties:
+        # Sandbox is off: the app reads Claude Code monitor state from
+        # ~/.claude/monitor, which the sandbox would block.
+        com.apple.security.app-sandbox: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: se.matalve.ClaudeHUD
+    postBuildScripts:
+      - name: Embed emitter
+        script: |
+          cp "$BUILT_PRODUCTS_DIR/claudehud-emitter" "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/claudehud-emitter"
+        inputFiles:
+          - $(BUILT_PRODUCTS_DIR)/claudehud-emitter
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(EXECUTABLE_FOLDER_PATH)/claudehud-emitter
+
+  claudehud-emitter:
+    type: tool
+    platform: macOS
+    sources:
+      - Emitter
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: se.matalve.ClaudeHUD.emitter
+
+schemes:
+  ClaudeHUD:
+    build:
+      targets:
+        ClaudeHUD: all
+    run:
+      config: Debug
+    archive:
+      config: Release
