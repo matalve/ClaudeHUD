@@ -9,7 +9,8 @@ import ServiceManagement
 // installed copy — the status reads "not registered" and the toggle can't
 // track it. A LaunchAgent keyed on the install path is signature-independent
 // and reliable. It's a per-user agent, so it only affects this user account;
-// other users are unaffected.
+// other users are unaffected. (It appears under System Settings › General ›
+// Login Items › "Allow in the Background", not "Open at Login".)
 enum LoginItem {
     private static let label = "se.matalve.ClaudeHUD"
 
@@ -70,5 +71,25 @@ enum LoginItem {
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         try? SMAppService.mainApp.unregister()
         UserDefaults.standard.set(true, forKey: key)
+    }
+}
+
+// Observable source of truth for the menu's checkmark. MenuBarExtra doesn't
+// reliably re-render when the app delegate's @Published values change, but it
+// does observe a @StateObject the App holds — so the toggle state lives here.
+@MainActor
+final class LoginModel: ObservableObject {
+    static let shared = LoginModel()
+
+    @Published private(set) var enabled: Bool = LoginItem.isEnabled
+
+    func refresh() {
+        let now = LoginItem.isEnabled
+        if now != enabled { enabled = now }
+    }
+
+    func toggle() {
+        LoginItem.setEnabled(!enabled)
+        enabled = LoginItem.isEnabled
     }
 }

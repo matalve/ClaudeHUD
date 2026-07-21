@@ -3,6 +3,8 @@ import SwiftUI
 @main
 struct ClaudeHUDApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    // Held by the App so MenuBarExtra reliably re-renders when it changes.
+    @StateObject private var login = LoginModel.shared
 
     var body: some Scene {
         MenuBarExtra("ClaudeHUD", systemImage: "gauge.with.needle") {
@@ -13,8 +15,8 @@ struct ClaudeHUDApp: App {
                 appDelegate.installHooks()
             }
             Divider()
-            Button(appDelegate.launchAtLogin ? "✓ Start at Login" : "Start at Login") {
-                appDelegate.setLaunchAtLogin(!appDelegate.launchAtLogin)
+            Button(login.enabled ? "✓ Start at Login" : "Start at Login") {
+                login.toggle()
             }
             Divider()
             Button("Quit ClaudeHUD") {
@@ -28,7 +30,6 @@ struct ClaudeHUDApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     @Published var panelVisible = false
     @Published var hovering = false
-    @Published var launchAtLogin = LoginItem.isEnabled
 
     private var panel: FloatingPanel?
     private let store = MonitorStore()
@@ -79,8 +80,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
-        // file-existence status is immediate, so this is safe to run anytime
-        refreshLoginStatus()
+        // reflect an external change (e.g. removed under System Settings)
+        LoginModel.shared.refresh()
     }
 
     func togglePanel() {
@@ -130,17 +131,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         guard let panel, panel.isVisible else { return }
         panel.orderOut(nil)
         panelVisible = false
-    }
-
-    func setLaunchAtLogin(_ on: Bool) {
-        LoginItem.setEnabled(on)
-        launchAtLogin = LoginItem.isEnabled
-    }
-
-    // Re-read the real status so the menu label is right even if the plist
-    // was changed outside the app.
-    func refreshLoginStatus() {
-        launchAtLogin = LoginItem.isEnabled
     }
 
     func applyScale(_ k: Double) {
