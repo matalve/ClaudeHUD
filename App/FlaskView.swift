@@ -209,17 +209,32 @@ struct FlasksPanel: View {
             )
         }
 
-        // falling drops
+        // falling drops — matches the original's CSS dropfall keyframes:
+        //   0%  opacity 0, translateY(-8), scale .5
+        //   22% opacity 1, translateY(0),  scale 1     (settles at the top)
+        //   100% opacity .9, translateY(fall), scale .9 (falls to the surface)
+        // over 0.95s with cubic-bezier(0.5, 0.05, 0.9, 0.4).
         for drop in motion.drops {
             let p = (now - drop.start) / 0.95
             guard p < 1 else { continue }
-            let eased = p * p * (3 - 2 * p) * p.squareRoot() // ~ the ease-in fall curve
-            let y = -8 + (drop.targetY + 8) * eased
-            let scale = p < 0.22 ? 0.5 + 0.5 * (p / 0.22) : 1 - 0.1 * ((p - 0.22) / 0.78)
+            let y: Double, opacity: Double, scale: Double
+            if p < 0.22 {
+                let t = dropEase(p / 0.22)
+                y = -8 + 8 * t
+                opacity = t
+                scale = 0.5 + 0.5 * t
+            } else {
+                let t = dropEase((p - 0.22) / 0.78)
+                y = drop.targetY * t
+                opacity = 1 - 0.1 * t
+                scale = 1 - 0.1 * t
+            }
             let rect = CGRect(x: 30 - 4 * scale, y: y, width: 8 * scale, height: 11 * scale)
             let (r, g, b) = drop.rgb
             let light = (r + (255 - r) * 0.55, g + (255 - g) * 0.55, b + (255 - b) * 0.55)
-            context.fill(
+            var dropCtx = context
+            dropCtx.opacity = opacity
+            dropCtx.fill(
                 Path(ellipseIn: rect),
                 with: .radialGradient(
                     Gradient(colors: [Color(rgb: light), Color(rgb: drop.rgb)]),
@@ -274,6 +289,22 @@ struct FlasksPanel: View {
 
 private func surfaceY(_ pct: Double) -> Double {
     surfaceBottom - (pct / 100) * (surfaceBottom - surfaceTop)
+}
+
+// The drop's timing function: CSS cubic-bezier(0.5, 0.05, 0.9, 0.4).
+// Maps a linear time fraction to the eased fraction by solving the curve's
+// x for its parameter, then evaluating y.
+private func dropEase(_ x: Double) -> Double {
+    func bez(_ t: Double, _ a: Double, _ b: Double) -> Double {
+        let mt = 1 - t
+        return 3 * mt * mt * t * a + 3 * mt * t * t * b + t * t * t
+    }
+    var lo = 0.0, hi = 1.0, t = x
+    for _ in 0..<18 {
+        t = (lo + hi) / 2
+        if bez(t, 0.5, 0.9) < x { lo = t } else { hi = t }
+    }
+    return bez(t, 0.05, 0.4)
 }
 
 private struct FlaskLabels: View {
