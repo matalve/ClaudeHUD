@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0AA7563FA84F2E28BAF3F964 /* UsageCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC7F432A22684A0ACF4F71B /* UsageCommand.swift */; };
 		0BEAB8B09A0B7B0B1E7E9FD3 /* FloatingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06F6357F187054CE4D8D4C2 /* FloatingPanel.swift */; };
+		11C95583E32FE99F8DBB19B4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 30914094B249048AF11ACE0F /* Assets.xcassets */; };
 		311D852D1A25203F01E6D059 /* ToneSynth.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B3A6ED9BA9ED6E7BD601E3 /* ToneSynth.swift */; };
 		486E44D14079F5BD9ACE68C7 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81CFC910EAF1A8E9356D692E /* main.swift */; };
 		4BC8A2B69A18B48AC7479CEB /* FlaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1221DDCD63F33BD83F2CB71 /* FlaskView.swift */; };
@@ -39,6 +40,7 @@
 		15602920477FCD6C30DB3B5D /* WidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetView.swift; sourceTree = "<group>"; };
 		1C32293BEBDDBCAEC5C87FFC /* ClaudeHUDApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHUDApp.swift; sourceTree = "<group>"; };
 		2EB857F4B08861684A2D0C37 /* Shared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared.swift; sourceTree = "<group>"; };
+		30914094B249048AF11ACE0F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		46DB4FEC84376A78198123D7 /* HookCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HookCommand.swift; sourceTree = "<group>"; };
 		4BFA997DC325F7503732BC4A /* claudehud-emitter */ = {isa = PBXFileReference; includeInIndex = 0; path = "claudehud-emitter"; sourceTree = BUILT_PRODUCTS_DIR; };
 		58276C1EA3EC3682B1C6FE36 /* ClaudeHUD.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClaudeHUD.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -59,6 +61,7 @@
 		143552D648CD86E5ABB1DBA4 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				30914094B249048AF11ACE0F /* Assets.xcassets */,
 				90548BABC46BA972B20D3735 /* ClaudeHUD.entitlements */,
 				1C32293BEBDDBCAEC5C87FFC /* ClaudeHUDApp.swift */,
 				A1221DDCD63F33BD83F2CB71 /* FlaskView.swift */,
@@ -129,6 +132,7 @@
 			buildConfigurationList = 8B05D3CF710CC09C3C5C630C /* Build configuration list for PBXNativeTarget "ClaudeHUD" */;
 			buildPhases = (
 				C6D9067576944BDC7C6E9B8F /* Sources */,
+				FFD4933A9A5CB66400072958 /* Resources */,
 				8822D830F675E04DE11AAFB8 /* Embed emitter */,
 			);
 			buildRules = (
@@ -179,6 +183,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FFD4933A9A5CB66400072958 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				11C95583E32FE99F8DBB19B4 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		8822D830F675E04DE11AAFB8 /* Embed emitter */ = {
