@@ -7,7 +7,7 @@ struct ClaudeHUDApp: App {
     @StateObject private var login = LoginModel.shared
 
     var body: some Scene {
-        MenuBarExtra("ClaudeHUD", systemImage: "gauge.with.needle") {
+        MenuBarExtra("ClaudeHUD", systemImage: "flask") {
             Button(appDelegate.panelVisible ? "Hide HUD" : "Show HUD") {
                 appDelegate.togglePanel()
             }
