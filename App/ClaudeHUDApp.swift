@@ -60,6 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         DispatchQueue.main.async { [weak self] in
             panel.orderFrontRegardless()
             self?.panelVisible = panel.isVisible
+            self?.refreshUsage() // first fetch, now that the panel is visible
         }
 
         store.start()
@@ -98,7 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     // The emitter's usage fetch is otherwise hook-driven, so without Claude
     // activity the flasks freeze at the last persisted values (the original
     // has the same flaw). Nudge it periodically and on wake from sleep; the
-    // emitter self-throttles on oauth_updated_at, so extra nudges are cheap.
+    // fetcher self-throttles on oauth_updated_at, so extra nudges are cheap.
     private func startUsageHeartbeat() {
         refreshUsage()
         usageTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
@@ -118,13 +119,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     private func refreshUsage() {
         guard panelVisible else { return }
-        let process = Process()
-        process.executableURL = Bundle.main.bundleURL
-            .appendingPathComponent("Contents/MacOS/claudehud-emitter")
-        process.arguments = ["usage"]
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-        try? process.run()
+        // In-process fetch with a cached keychain token, so waking the Mac
+        // no longer spawns a fresh process that re-reads the keychain.
+        UsageFetcher.shared.refresh()
     }
 
     func hidePanel() {

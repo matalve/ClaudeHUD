@@ -117,24 +117,6 @@ private func pruneStale() {
     }
 }
 
-// The VS Code extension never runs the statusline, so hooks keep the
-// rate-limit data fresh instead. The usage subcommand self-throttles; the
-// stamp check here just avoids pointless spawns.
-private func maybeRefreshUsage() {
-    if let limits = readJSONObject(Monitor.limitsFile),
-       nowMs() - (limits["oauth_updated_at"] as? Int ?? 0) < 60_000
-    {
-        return
-    }
-    let process = Process()
-    process.executableURL = selfExecutable()
-    process.arguments = ["usage"]
-    process.standardOutput = FileHandle.nullDevice
-    process.standardError = FileHandle.nullDevice
-    try? process.run()
-    // intentionally not waited on — the hook must return immediately
-}
-
 func selfExecutable() -> URL {
     URL(fileURLWithPath: CommandLine.arguments[0])
         .resolvingSymlinksInPath()
@@ -230,5 +212,7 @@ func runHook() {
     }
 
     atomicWriteJSON(s, to: Monitor.sessionFile(id))
-    maybeRefreshUsage()
+    // Rate limits are refreshed by the app (UsageFetcher), which caches the
+    // keychain token — hooks no longer spawn a usage fetch, so the emitter
+    // never touches the keychain.
 }

@@ -10,6 +10,7 @@
 		0AA7563FA84F2E28BAF3F964 /* UsageCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC7F432A22684A0ACF4F71B /* UsageCommand.swift */; };
 		0BEAB8B09A0B7B0B1E7E9FD3 /* FloatingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06F6357F187054CE4D8D4C2 /* FloatingPanel.swift */; };
 		11C95583E32FE99F8DBB19B4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 30914094B249048AF11ACE0F /* Assets.xcassets */; };
+		1C00A4DF2CBF8DB68285B2D7 /* UsageFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A02AD6FE7FA0196DD01A86 /* UsageFetcher.swift */; };
 		311D852D1A25203F01E6D059 /* ToneSynth.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B3A6ED9BA9ED6E7BD601E3 /* ToneSynth.swift */; };
 		486E44D14079F5BD9ACE68C7 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81CFC910EAF1A8E9356D692E /* main.swift */; };
 		4BC8A2B69A18B48AC7479CEB /* FlaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1221DDCD63F33BD83F2CB71 /* FlaskView.swift */; };
@@ -53,6 +54,7 @@
 		CBFE9E7C9EA5AC54CF3C013C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		E06F6357F187054CE4D8D4C2 /* FloatingPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanel.swift; sourceTree = "<group>"; };
 		EC9A517E891E9C1ABECCF129 /* StatuslineCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatuslineCommand.swift; sourceTree = "<group>"; };
+		F3A02AD6FE7FA0196DD01A86 /* UsageFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageFetcher.swift; sourceTree = "<group>"; };
 		F6B3A6ED9BA9ED6E7BD601E3 /* ToneSynth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToneSynth.swift; sourceTree = "<group>"; };
 		FFC7F432A22684A0ACF4F71B /* UsageCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageCommand.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -71,6 +73,7 @@
 				97EC200BE123B5C1241CFA52 /* MonitorStore.swift */,
 				AB169FDB9D9D73C164ECD6A8 /* SessionCardView.swift */,
 				F6B3A6ED9BA9ED6E7BD601E3 /* ToneSynth.swift */,
+				F3A02AD6FE7FA0196DD01A86 /* UsageFetcher.swift */,
 				15602920477FCD6C30DB3B5D /* WidgetView.swift */,
 			);
 			path = App;
@@ -244,6 +247,7 @@
 				5FFEAED5D31AA9AC0DB134DE /* SessionCardView.swift in Sources */,
 				7790BE937F0541302CB92D6C /* Shared.swift in Sources */,
 				311D852D1A25203F01E6D059 /* ToneSynth.swift in Sources */,
+				1C00A4DF2CBF8DB68285B2D7 /* UsageFetcher.swift in Sources */,
 				8C9605C986F885DD826D620D /* WidgetView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
