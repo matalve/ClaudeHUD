@@ -120,7 +120,7 @@ struct SessionCardView: View {
                 return Text("📋 ") + Text("Plan ready").bold()
                     + (d.message.isEmpty ? Text("") : msg(d.message))
             }
-            return Text("📞 ") + Text("Claude is calling !").bold()
+            return Text("📞 ") + Text("Claude is calling!").bold()
                 + (d.message.isEmpty ? Text("") : msg(d.message))
         case "bash":
             return Text("❯ ") + Text(d.command.isEmpty ? d.description : d.command)
@@ -144,7 +144,7 @@ struct SessionCardView: View {
         case "compacting":
             return Text("🗜 Compacting context…")
         case "done":
-            return Text("✅ ") + Text("Done !").bold()
+            return Text("✅ ") + Text("Done!").bold()
                 + (d.message.isEmpty ? Text("") : msg(d.message))
         case "interrupted":
             return Text("🛑 ") + Text("Interrupted").bold()
