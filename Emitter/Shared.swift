@@ -70,10 +70,40 @@ func prettyModel(_ id: String) -> String {
     return name.prefix(1).uppercased() + name.dropFirst() + (version.isEmpty ? "" : " " + version)
 }
 
-// The statusline (which would carry the model name) never runs under the
-// VS Code extension, but transcripts record the model of every assistant
-// message — read the tail of the file and take the most recent one.
-func detectModel(_ transcriptPath: Any?) -> String? {
+// Claude Code names each session (the title shown in its own UI) and records
+// it in the transcript as a "custom-title" entry. That beats any name we
+// could derive: a session started in the home directory would otherwise be
+// named after that directory, i.e. the account name.
+func detectTitle(_ transcriptPath: Any?) -> String? {
+    forEachTranscriptEntry(transcriptPath) { obj in
+        guard obj["type"] as? String == "custom-title",
+              let title = obj["customTitle"] as? String,
+              !title.isEmpty
+        else { return nil }
+        return title
+    }
+}
+
+// Falls back to the enclosing git repository's name, so a session working in
+// a subdirectory still shows the project rather than the subdirectory.
+func gitRepoName(_ cwd: Any?) -> String? {
+    guard let start = cwd as? String, !start.isEmpty else { return nil }
+    var dir = URL(fileURLWithPath: start)
+    for _ in 0..<25 {
+        if FileManager.default.fileExists(atPath: dir.appendingPathComponent(".git").path) {
+            return dir.lastPathComponent
+        }
+        let parent = dir.deletingLastPathComponent()
+        if parent.path == dir.path { break }
+        dir = parent
+    }
+    return nil
+}
+
+// Walks transcript entries newest-first, returning the first non-nil result.
+private func forEachTranscriptEntry(
+    _ transcriptPath: Any?, _ pick: ([String: Any]) -> String?
+) -> String? {
     guard let path = transcriptPath as? String,
           let handle = FileHandle(forReadingAtPath: path) else { return nil }
     defer { try? handle.close() }
@@ -82,21 +112,29 @@ func detectModel(_ transcriptPath: Any?) -> String? {
     try? handle.seek(toOffset: size - len)
     guard let data = try? handle.readToEnd() else { return nil }
     // Decode leniently: the fixed-size tail cut can land mid-character, and
-    // strict UTF-8 decoding would then fail and lose the model entirely.
+    // strict UTF-8 decoding would then fail and lose everything.
     let text = String(decoding: data, as: UTF8.self)
-
-    // Walk entries newest-first and take the main agent's latest model, so a
-    // subagent running a different model doesn't hijack the card. (The first
-    // line is usually a partial entry from the tail cut; it just fails to
-    // parse and is skipped.)
     for line in text.split(separator: "\n").reversed() {
         guard
             let obj = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
-            obj["type"] as? String == "assistant",
-            obj["isSidechain"] as? Bool != true,
-            let model = (obj["message"] as? [String: Any])?["model"] as? String
+            let found = pick(obj)
         else { continue }
-        return prettyModel(model)
+        return found
     }
     return nil
+}
+
+// The statusline (which would carry the model name) never runs under the
+// VS Code extension, but transcripts record the model of every assistant
+// message — read the tail of the file and take the most recent one.
+func detectModel(_ transcriptPath: Any?) -> String? {
+    // Take the main agent's latest model, so a subagent running a different
+    // model doesn't hijack the card.
+    forEachTranscriptEntry(transcriptPath) { obj in
+        guard obj["type"] as? String == "assistant",
+              obj["isSidechain"] as? Bool != true,
+              let model = (obj["message"] as? [String: Any])?["model"] as? String
+        else { return nil }
+        return prettyModel(model)
+    }
 }

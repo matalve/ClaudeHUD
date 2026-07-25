@@ -144,15 +144,22 @@ func runHook() {
     if let model = detectModel(s["transcript_path"]) {
         s["model"] = model
     }
+    // Same for the title: prefer the name Claude Code gave the session (it
+    // renames sessions as they take shape), then the enclosing repo. Only
+    // fall back to the working directory's name, which for a session started
+    // at home is just the username.
+    if let title = detectTitle(s["transcript_path"]) {
+        s["title"] = title
+    } else if s["title"] == nil {
+        s["title"] = (p["session_title"] as? String)
+            ?? gitRepoName(p["cwd"] ?? s["cwd"])
+            ?? { let b = basename(p["cwd"]); return b.isEmpty ? "session" : b }()
+    }
 
     let mainAgent = p["agent_id"] == nil || p["agent_type"] as? String == "main"
 
     switch p["hook_event_name"] as? String {
     case "SessionStart":
-        let fallback = basename(p["cwd"])
-        s["title"] = (p["session_title"] as? String)
-            ?? (s["title"] as? String)
-            ?? (fallback.isEmpty ? "session" : fallback)
         if let model = p["model"] as? String {
             s["model"] = prettyModel(model)
         } else if let model = (p["model"] as? [String: Any])?["display_name"] as? String {
