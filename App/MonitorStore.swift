@@ -271,9 +271,11 @@ private func readTailForInterrupt(_ path: String) -> Bool {
     let size = (try? handle.seekToEnd()) ?? 0
     let len = min(size, 65_536)
     try? handle.seek(toOffset: size - len)
+    guard let data = try? handle.readToEnd() else { return false }
+    // lenient decode: the fixed-size tail cut can land mid-character, and a
+    // strict decode would then report every busy session as not-interrupted
+    let text = String(decoding: data, as: UTF8.self)
     guard
-        let data = try? handle.readToEnd(),
-        let text = String(data: data, encoding: .utf8),
         // last non-empty line is the newest entry
         let line = text.split(separator: "\n").reversed().first(where: {
             !$0.trimmingCharacters(in: .whitespaces).isEmpty

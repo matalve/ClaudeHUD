@@ -82,9 +82,11 @@ func detectModel(_ transcriptPath: Any?) -> String? {
     try? handle.seek(toOffset: size - len)
     guard
         let data = try? handle.readToEnd(),
-        let text = String(data: data, encoding: .utf8),
         let regex = try? NSRegularExpression(pattern: "\"model\"\\s*:\\s*\"(claude-[^\"]+)\"")
     else { return nil }
+    // Decode leniently: the fixed-size tail cut can land mid-character, and
+    // strict UTF-8 decoding would then fail and lose the model entirely.
+    let text = String(decoding: data, as: UTF8.self)
     let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
     guard let last = matches.last, let range = Range(last.range(at: 1), in: text) else { return nil }
     return prettyModel(String(text[range]))
