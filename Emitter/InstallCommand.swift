@@ -11,6 +11,11 @@ private let events: [(name: String, matcher: String?, async: Bool)] = [
     ("UserPromptSubmit", nil, true),
     ("PreToolUse", "*", true),
     ("PostToolUse", "*", true),
+    // a failed tool call fires PostToolUseFailure *instead of* PostToolUse,
+    // and a classifier denial fires PermissionDenied — without these the card
+    // stays stuck on whatever the tool was doing
+    ("PostToolUseFailure", "*", true),
+    ("PermissionDenied", "*", true),
     ("PermissionRequest", "*", true),
     ("Notification", nil, true),
     ("PreCompact", nil, true),

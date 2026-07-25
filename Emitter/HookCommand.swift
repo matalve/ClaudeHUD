@@ -179,9 +179,17 @@ func runHook() {
             s["state"] = state
             s["detail"] = detail
         }
-    case "PostToolUse":
+    case "PostToolUse", "PostToolUseFailure":
         if mainAgent {
             s["last_action"] = summarize(s)
+            s["state"] = "thinking"
+            s["detail"] = [String: Any]()
+        }
+    case "PermissionDenied":
+        // the auto-mode classifier refused the call; Claude carries on with
+        // the denial, so leave the card working rather than stuck on the tool
+        if mainAgent {
+            s["last_action"] = "⛔ denied: " + (p["tool_name"] as? String ?? "tool")
             s["state"] = "thinking"
             s["detail"] = [String: Any]()
         }

@@ -108,6 +108,7 @@ final class MonitorStore: ObservableObject {
     private var timer: Timer?
     private var alarmKey: String?
     private var ackedKey: String?
+    @Published private var acknowledgedCalls: Set<String> = []
 
     private var monitorDir: URL {
         if let override = ProcessInfo.processInfo.environment["CLAUDE_MONITOR_DIR"] {
@@ -127,9 +128,19 @@ final class MonitorStore: ObservableObject {
     /// Any click acknowledges the current set of unanswered calls (keyed by
     /// session+timestamp so new calls ring again) without hiding the card.
     func acknowledge() {
-        guard alarmKey != nil else { return }
-        ackedKey = alarmKey
+        guard let key = alarmKey else { return }
+        ackedKey = key
+        acknowledgedCalls = Set(key.split(separator: "|").map(String.init))
         updateAlarm()
+    }
+
+    /// True once the user has responded to this session's current permission
+    /// event. No hook fires when a permission is approved (confirmed against
+    /// the hook reference), and an approved long-running tool looks exactly
+    /// like one still waiting — so after acknowledgement the card stops
+    /// claiming Claude is calling and just shows the pending tool.
+    func isAcknowledged(_ session: MonitorSession) -> Bool {
+        acknowledgedCalls.contains("\(session.id):\(session.updatedAt)")
     }
 
     private func refresh() {
@@ -235,6 +246,7 @@ final class MonitorStore: ObservableObject {
         if calling.isEmpty {
             alarmKey = nil
             ackedKey = nil
+            if !acknowledgedCalls.isEmpty { acknowledgedCalls = [] }
         } else {
             alarmKey = calling.map { "\($0.id):\($0.updatedAt)" }.sorted().joined(separator: "|")
         }

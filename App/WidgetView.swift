@@ -96,7 +96,11 @@ struct WidgetView: View {
                         )
                 }
                 ForEach(store.sessions) { session in
-                    SessionCardView(session: session, stopwatch: store.stopwatches[session.id])
+                    SessionCardView(
+                        session: session,
+                        stopwatch: store.stopwatches[session.id],
+                        acknowledged: store.isAcknowledged(session)
+                    )
                 }
             }
         }

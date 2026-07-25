@@ -21,6 +21,7 @@ private let accentColors: [String: (Double, Double, Double)] = [
 struct SessionCardView: View {
     let session: MonitorSession
     let stopwatch: Stopwatch?
+    var acknowledged = false
 
     private var accent: Color {
         Color(rgb: accentColors[session.state] ?? (100, 116, 139))
@@ -108,6 +109,13 @@ struct SessionCardView: View {
             let dots = String(repeating: ".", count: Int(now.timeIntervalSince1970 * 3) % 4)
             return Text("💭 Thinking") + Text(dots)
         case "permission":
+            // Once answered, nothing tells us whether the tool was approved
+            // and is now running or is still waiting — so drop the "calling"
+            // claim and just show what's pending.
+            if acknowledged {
+                return Text("⏳ ") + Text("Pending").bold()
+                    + (d.message.isEmpty ? Text("") : msg(d.message))
+            }
             if d.plan {
                 return Text("📋 ") + Text("Plan ready").bold()
                     + (d.message.isEmpty ? Text("") : msg(d.message))
