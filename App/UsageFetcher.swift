@@ -16,34 +16,51 @@ final class UsageFetcher {
     private let queue = DispatchQueue(label: "se.matalve.ClaudeHUD.usage")
     private var cachedToken: String?
     private var cachedTokenExpiry: Double = 0 // epoch ms; 0 = unknown
+    private var keychainAttempted = false
 
-    // Refresh limits.json if the last OAuth fetch is stale. Safe to call from
-    // the main thread; the work runs on a background queue.
+    // Refresh limits.json if the last OAuth fetch is stale. Automatic
+    // callers (heartbeat, wake, panel-shown) use the cached token only —
+    // except the very first attempt after launch, which may read the
+    // keychain once. macOS partition lists mean an ad-hoc-signed app can
+    // never keep durable keychain access ("Always Allow" doesn't stick), so
+    // unattended re-reads would turn every unlock into a permission prompt.
     func refresh() {
-        queue.async { [weak self] in self?.fetchIfStale() }
+        queue.async { [weak self] in
+            guard let self else { return }
+            self.fetchIfStale(allowKeychain: !self.keychainAttempted)
+        }
     }
 
-    private func fetchIfStale() {
-        if let limits = readJSONObject(Monitor.limitsFile),
+    // User picked "Refresh Rate Limits" in the menu: they're present and
+    // asked for it, so a keychain prompt is fine here.
+    func refreshManually() {
+        queue.async { [weak self] in self?.fetchIfStale(allowKeychain: true, force: true) }
+    }
+
+    private func fetchIfStale(allowKeychain: Bool, force: Bool = false) {
+        if !force,
+           let limits = readJSONObject(Monitor.limitsFile),
            nowMs() - (limits["oauth_updated_at"] as? Int ?? 0) < 60_000 {
             return
         }
-        guard let token = token() else { return }
+        guard let token = token(allowKeychain: allowKeychain) else { return }
 
         guard let data = fetchUsage(token: token) else { return }
         if data.isEmpty {
-            // 401/expired — drop the cached token so the next refresh re-reads
+            // 401/expired — drop the cache; a manual refresh can re-read
             cachedToken = nil
             return
         }
         writeLimits(from: data)
     }
 
-    // Cached token, read from the keychain only when missing or expired.
-    private func token() -> String? {
+    // Cached token; falls back to one keychain read when permitted.
+    private func token(allowKeychain: Bool) -> String? {
         if let t = cachedToken, cachedTokenExpiry == 0 || cachedTokenExpiry > Double(nowMs()) {
             return t
         }
+        guard allowKeychain else { return nil }
+        keychainAttempted = true
         guard let creds = keychainCredentials() else { return nil }
         let oauth = creds["claudeAiOauth"] as? [String: Any] ?? creds
         guard let token = oauth["accessToken"] as? String else { return nil }

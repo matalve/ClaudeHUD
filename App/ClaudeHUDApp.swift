@@ -14,6 +14,9 @@ struct ClaudeHUDApp: App {
             Button("Install Claude Code Hooks…") {
                 appDelegate.installHooks()
             }
+            Button("Refresh Rate Limits") {
+                UsageFetcher.shared.refreshManually()
+            }
             Divider()
             Button(login.enabled ? "✓ Start at Login" : "Start at Login") {
                 login.toggle()

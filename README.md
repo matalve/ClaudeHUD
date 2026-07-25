@@ -38,12 +38,18 @@ Code's hooks and statusline. Hooks (`SessionStart`, `UserPromptSubmit`,
 statusline command persists rate-limit percentages. No sockets, no servers —
 plain files, same architecture as the original.
 
-Because the statusline never runs under the VS Code extension, the hooks also
-spawn `claudehud-emitter usage` (throttled) to fetch rate limits from
-Anthropic's own usage endpoint, using the OAuth token Claude Code already
-stores in your login keychain. macOS will ask once to allow the emitter to
-read it — the token is never copied, logged, or sent anywhere else. The
-endpoint is undocumented and may change or break on Anthropic's side.
+Because the statusline never runs under the VS Code extension, the app also
+fetches rate limits from Anthropic's own usage endpoint, using the OAuth
+token Claude Code already stores in your login keychain. The token is read
+**at most once per launch** (macOS asks for permission; an ad-hoc-signed app
+can't keep durable keychain access, so unattended re-reads would prompt at
+every unlock) and cached in memory — automatic refreshes only ever use the
+cache. When the cached token expires, the flasks go stale until the next
+launch, a terminal session's statusline updates them, or you pick
+**Refresh Rate Limits** from the menu bar (which may prompt once, at a
+moment you chose). The token is never copied, logged, or sent anywhere
+else. The endpoint is undocumented and may change or break on Anthropic's
+side.
 
 ## Install
 
