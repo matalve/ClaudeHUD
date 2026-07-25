@@ -40,16 +40,21 @@ plain files, same architecture as the original.
 
 Because the statusline never runs under the VS Code extension, the app also
 fetches rate limits from Anthropic's own usage endpoint, using the OAuth
-token Claude Code already stores in your login keychain. The token is read
-**at most once per launch** (macOS asks for permission; an ad-hoc-signed app
-can't keep durable keychain access, so unattended re-reads would prompt at
-every unlock) and cached in memory — automatic refreshes only ever use the
-cache. When the cached token expires, the flasks go stale until the next
-launch, a terminal session's statusline updates them, or you pick
-**Refresh Rate Limits** from the menu bar (which may prompt once, at a
-moment you chose). The token is never copied, logged, or sent anywhere
-else. The endpoint is undocumented and may change or break on Anthropic's
-side.
+token Claude Code already stores in your login keychain, cached in memory
+between refreshes. macOS asks for permission the first time.
+
+Approving it durably needs a **stable** signing identity: an ad-hoc
+signature changes on every build, so macOS keeps treating the app as a
+stranger and asks again after each rebuild — and once the cached token
+expires, the wake-from-sleep refresh turns that into a prompt at every
+unlock. Sign the installed app with `Tools/sign-local.sh` (a self-signed
+certificate is enough — no Apple account, no personal details in the
+binary) and approve once; the approval then holds across restarts and
+rebuilds. Should a read ever start prompting again, automatic refreshes
+back off and only **Refresh Rate Limits** in the menu will ask.
+
+The token is never copied, logged, or sent anywhere else. The endpoint is
+undocumented and may change or break on Anthropic's side.
 
 ## Install
 
