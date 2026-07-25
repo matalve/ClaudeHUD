@@ -16,25 +16,31 @@ final class UsageFetcher {
     private let queue = DispatchQueue(label: "se.matalve.ClaudeHUD.usage")
     private var cachedToken: String?
     private var cachedTokenExpiry: Double = 0 // epoch ms; 0 = unknown
-    private var keychainAttempted = false
+    // Set when a keychain read visibly prompted the user (or was cancelled).
+    // Automatic refreshes then stop touching the keychain for this session,
+    // so a lost approval can't turn every wake-from-sleep into a prompt.
+    private var keychainPromptsUser = false
 
-    // Refresh limits.json if the last OAuth fetch is stale. Automatic
-    // callers (heartbeat, wake, panel-shown) use the cached token only —
-    // except the very first attempt after launch, which may read the
-    // keychain once. macOS partition lists mean an ad-hoc-signed app can
-    // never keep durable keychain access ("Always Allow" doesn't stick), so
-    // unattended re-reads would turn every unlock into a permission prompt.
+    // Refresh limits.json if the last OAuth fetch is stale. Reads the
+    // keychain when needed — silent once the app is signed with a stable
+    // identity and the token access has been approved (see Tools/
+    // sign-local.sh); backs off automatically if it ever starts prompting.
     func refresh() {
         queue.async { [weak self] in
             guard let self else { return }
-            self.fetchIfStale(allowKeychain: !self.keychainAttempted)
+            self.fetchIfStale(allowKeychain: !self.keychainPromptsUser)
         }
     }
 
     // User picked "Refresh Rate Limits" in the menu: they're present and
-    // asked for it, so a keychain prompt is fine here.
+    // asked for it, so a keychain prompt is fine here — and approving it
+    // clears the back-off so automatic refreshes resume.
     func refreshManually() {
-        queue.async { [weak self] in self?.fetchIfStale(allowKeychain: true, force: true) }
+        queue.async { [weak self] in
+            guard let self else { return }
+            self.keychainPromptsUser = false
+            self.fetchIfStale(allowKeychain: true, force: true)
+        }
     }
 
     private func fetchIfStale(allowKeychain: Bool, force: Bool = false) {
@@ -60,7 +66,6 @@ final class UsageFetcher {
             return t
         }
         guard allowKeychain else { return nil }
-        keychainAttempted = true
         guard let creds = keychainCredentials() else { return nil }
         let oauth = creds["claudeAiOauth"] as? [String: Any] ?? creds
         guard let token = oauth["accessToken"] as? String else { return nil }
@@ -79,7 +84,16 @@ final class UsageFetcher {
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
         var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+        // A silent (approved) read returns in milliseconds; anything slow
+        // means macOS put a permission dialog in front of the user. There's
+        // no API that reports "a prompt was shown", so time the call.
+        let started = Date()
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        let prompted = Date().timeIntervalSince(started) > 2
+        if prompted || status == errSecUserCanceled {
+            keychainPromptsUser = true
+        }
+        guard status == errSecSuccess,
               let data = item as? Data,
               let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
         else { return nil }
