@@ -80,14 +80,23 @@ func detectModel(_ transcriptPath: Any?) -> String? {
     let size = (try? handle.seekToEnd()) ?? 0
     let len = min(size, 131_072)
     try? handle.seek(toOffset: size - len)
-    guard
-        let data = try? handle.readToEnd(),
-        let regex = try? NSRegularExpression(pattern: "\"model\"\\s*:\\s*\"(claude-[^\"]+)\"")
-    else { return nil }
+    guard let data = try? handle.readToEnd() else { return nil }
     // Decode leniently: the fixed-size tail cut can land mid-character, and
     // strict UTF-8 decoding would then fail and lose the model entirely.
     let text = String(decoding: data, as: UTF8.self)
-    let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
-    guard let last = matches.last, let range = Range(last.range(at: 1), in: text) else { return nil }
-    return prettyModel(String(text[range]))
+
+    // Walk entries newest-first and take the main agent's latest model, so a
+    // subagent running a different model doesn't hijack the card. (The first
+    // line is usually a partial entry from the tail cut; it just fails to
+    // parse and is skipped.)
+    for line in text.split(separator: "\n").reversed() {
+        guard
+            let obj = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
+            obj["type"] as? String == "assistant",
+            obj["isSidechain"] as? Bool != true,
+            let model = (obj["message"] as? [String: Any])?["model"] as? String
+        else { continue }
+        return prettyModel(model)
+    }
+    return nil
 }

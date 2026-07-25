@@ -136,12 +136,12 @@ func runHook() {
     if let effort = (p["effort"] as? [String: Any])?["level"] as? String { s["effort"] = effort }
     s["updated_at"] = nowMs()
 
-    // Fill in a missing model from the transcript on ANY event. A session
-    // whose first UserPromptSubmit ran against a still-empty transcript has
-    // no model yet, and a long agentic turn can go a long time before Stop
-    // (the only other place that used to detect it) fires — leaving the card
-    // without a model the whole time. Stops once the model is known.
-    if s["model"] == nil, let model = detectModel(s["transcript_path"]) {
+    // Re-read the model from the transcript on every event, so a card shows
+    // the right model even for a session whose first prompt ran against a
+    // still-empty transcript, and follows a mid-session model switch instead
+    // of waiting for the turn to end. Costs one tail read per event, which is
+    // noise next to spawning this process.
+    if let model = detectModel(s["transcript_path"]) {
         s["model"] = model
     }
 
