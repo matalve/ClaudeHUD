@@ -48,6 +48,24 @@ struct SessionDetail: Equatable {
     }
 }
 
+struct RunningSubagent: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let description: String
+    let startedAt: Int // epoch ms
+
+    init?(_ json: Any?) {
+        guard let o = json as? [String: Any],
+              let id = o["id"] as? String,
+              let name = o["name"] as? String
+        else { return nil }
+        self.id = id
+        self.name = name
+        description = o["description"] as? String ?? ""
+        startedAt = o["started_at"] as? Int ?? 0
+    }
+}
+
 struct MonitorSession: Identifiable, Equatable {
     var id: String
     var title: String
@@ -59,6 +77,7 @@ struct MonitorSession: Identifiable, Equatable {
     var lastAction: String?
     var updatedAt: Int // epoch ms
     var stale: Bool
+    var subagents: [RunningSubagent]
 }
 
 /// Continuous-run stopwatch per session: resets when it goes inactive→active,
@@ -192,7 +211,10 @@ final class MonitorStore: ObservableObject {
                 detail: SessionDetail(s["detail"]),
                 lastAction: s["last_action"] as? String,
                 updatedAt: updatedAt,
-                stale: stale
+                stale: stale,
+                subagents: (s["subagents"] as? [[String: Any]] ?? [])
+                    .compactMap(RunningSubagent.init)
+                    .sorted { $0.startedAt < $1.startedAt }
             ))
         }
         visible.sort { $0.updatedAt > $1.updatedAt }

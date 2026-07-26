@@ -31,6 +31,12 @@ struct SessionCardView: View {
         VStack(alignment: .leading, spacing: 3) {
             titleRow
             statusRow
+            // Background subagents keep working after the tool call that
+            // spawned them returns, so list them separately from the main
+            // agent's state rather than letting them churn it.
+            if !session.subagents.isEmpty {
+                subagentRows
+            }
         }
         .padding(EdgeInsets(top: 7, leading: 12, bottom: 7, trailing: 9))
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -94,6 +100,38 @@ struct SessionCardView: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
+    }
+
+    private var subagentRows: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+            VStack(alignment: .leading, spacing: 1) {
+                ForEach(session.subagents) { agent in
+                    HStack(spacing: 4) {
+                        Text("⚙")
+                            .font(.system(size: 8))
+                            .foregroundColor(Color(rgb: (129, 140, 248)))
+                        Text(agent.name)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(Color(rgb: (165, 180, 252)))
+                        Text(elapsed(agent, now: timeline.date))
+                            .font(.system(size: 9))
+                            .monospacedDigit()
+                            .foregroundColor(msgColor)
+                        Spacer(minLength: 0)
+                    }
+                    .lineLimit(1)
+                }
+            }
+            .padding(.leading, 2)
+            .padding(.top, 1)
+        }
+    }
+
+    private func elapsed(_ agent: RunningSubagent, now: Date) -> String {
+        let seconds = max(0, Int(now.timeIntervalSince1970) - agent.startedAt / 1000)
+        if seconds < 60 { return "\(seconds)s" }
+        if seconds < 3600 { return "\(seconds / 60)m \(String(format: "%02d", seconds % 60))s" }
+        return "\(seconds / 3600)h \(String(format: "%02d", (seconds % 3600) / 60))m"
     }
 
     private var msgColor: Color { Color(rgb: (148, 163, 184)) }

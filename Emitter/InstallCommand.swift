@@ -17,6 +17,10 @@ private let events: [(name: String, matcher: String?, async: Bool)] = [
     ("PostToolUseFailure", "*", true),
     ("PermissionDenied", "*", true),
     ("PermissionRequest", "*", true),
+    // background subagents outlive the tool call that spawned them, so the
+    // card needs their start/stop to know what's still running
+    ("SubagentStart", "*", true),
+    ("SubagentStop", "*", true),
     ("Notification", nil, true),
     ("PreCompact", nil, true),
     ("Stop", nil, true),

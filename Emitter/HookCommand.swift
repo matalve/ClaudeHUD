@@ -126,15 +126,31 @@ func selfExecutable() -> URL {
 func runHook() {
     guard let p = readStdinJSON(), let id = p["session_id"] as? String else { return }
 
+    let event = p["hook_event_name"] as? String
+    // Subagent events describe the subagent, not the session: their effort,
+    // transcript and model belong to the subagent and must not overwrite the
+    // main agent's — that would show e.g. the subagent's model on the card.
+    let isSubagentEvent = event == "SubagentStart" || event == "SubagentStop"
+
     var s = readJSONObject(Monitor.sessionFile(id)) ?? [:]
     s["session_id"] = id
     if let cwd = p["cwd"] as? String { s["cwd"] = cwd }
-    // needed by the widget to tail the transcript for interrupt markers — no
-    // hook fires on user interrupt or permission denial, so the trailing
-    // "[Request interrupted by user]" entry is the only signal
-    if let tp = p["transcript_path"] as? String { s["transcript_path"] = tp }
-    if let effort = (p["effort"] as? [String: Any])?["level"] as? String { s["effort"] = effort }
+    if !isSubagentEvent {
+        // needed by the widget to tail the transcript for interrupt markers — no
+        // hook fires on user interrupt or permission denial, so the trailing
+        // "[Request interrupted by user]" entry is the only signal
+        if let tp = p["transcript_path"] as? String { s["transcript_path"] = tp }
+        if let effort = (p["effort"] as? [String: Any])?["level"] as? String { s["effort"] = effort }
+    }
     s["updated_at"] = nowMs()
+
+    // A SubagentStop that never arrives (crash, force-quit) would otherwise
+    // leave a subagent listed as running forever.
+    if let running = s["subagents"] as? [[String: Any]], !running.isEmpty {
+        let cutoff = nowMs() - 6 * 60 * 60 * 1000
+        let alive = running.filter { ($0["started_at"] as? Int ?? 0) > cutoff }
+        if alive.count != running.count { s["subagents"] = alive }
+    }
 
     // Re-read the model from the transcript on every event, so a card shows
     // the right model even for a session whose first prompt ran against a
@@ -158,7 +174,28 @@ func runHook() {
 
     let mainAgent = p["agent_id"] == nil || p["agent_type"] as? String == "main"
 
-    switch p["hook_event_name"] as? String {
+    switch event {
+    case "SubagentStart":
+        // A backgrounded subagent returns from its tool call immediately, so
+        // without this the card shows nothing while it works.
+        if let agentID = p["agent_id"] as? String {
+            var running = s["subagents"] as? [[String: Any]] ?? []
+            running.removeAll { $0["id"] as? String == agentID }
+            let name = (p["agent_type"] ?? p["subagent_type"]) as? String ?? "subagent"
+            running.append([
+                "id": agentID,
+                "name": name,
+                "description": truncate(p["description"], 60),
+                "started_at": nowMs(),
+            ])
+            s["subagents"] = running
+        }
+    case "SubagentStop":
+        if let agentID = p["agent_id"] as? String {
+            var running = s["subagents"] as? [[String: Any]] ?? []
+            running.removeAll { $0["id"] as? String == agentID }
+            s["subagents"] = running
+        }
     case "SessionStart":
         if let model = p["model"] as? String {
             s["model"] = prettyModel(model)
